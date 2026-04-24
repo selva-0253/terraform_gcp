@@ -1,0 +1,16 @@
+
+# Terraform working directory
+.terraform/
+
+# Terraform state files (VERY IMPORTANT: contain sensitive data)
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+
+# Terraform CLI config files
+.terraformrc
+terraform.rc
+
+terraform.tfvars
