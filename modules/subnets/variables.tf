@@ -12,4 +12,7 @@ variable "subnet_region"{
   type = string
 }
 
+variable "cidr"{
+  type = string
+}
 

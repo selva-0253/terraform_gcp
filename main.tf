@@ -1,32 +1,34 @@
 module "vpc" {
  
 	source = "./modules/vpc"
-	vpc_name = "vpc_website"
+	vpc_name = "website-vpc"
 }
 
 module "cluster1_vpc"{
 
   source = "./modules/vpc"
-  vpc_name = "cluster1_vpc"
+  vpc_name = "cluster1-vpc"
 }
 
 module "subnet1"{
   source = "./modules/subnets"
-  subnet_name = "public_subnet"
+  subnet_name = "public-subnet"
+  cidr = "10.1.0.0/16"
   subnet_region = "asia-south1"
   vpc_name = module.vpc.vpc_self_link
 }
 module "cluster1_subnet"{
   source = "./modules/subnets"
-  subnet_name = "cluster1_subnet"
+  subnet_name = "cluster1-subnet"
+  cidr = "10.0.0.0/24"
   subnet_region = "asia-south2"
   vpc_name = module.cluster1_vpc.vpc_self_link
 }
 module "website" {
 	source = "./modules/vm"
 	
-	vm_name = "website_vm"
-	vm_zone = "asia_south1"
+	vm_name = "website-vm"
+	vm_zone = "asia-south1-a"
   vm_boot_disk_image = "debian-cloud/debian-12"
   network = module.vpc.vpc_self_link
   vm_machine_type = "e2-micro"
@@ -35,7 +37,7 @@ module "website" {
 
 module "c1_control_plane"{
   source = "./modules/vm"
-  vm_name = "c1_cp"
+  vm_name = "c1-cp"
 	vm_zone = "asia_south2-a"
   vm_boot_disk_image = "debian-cloud/debian-12"
   network = module.cluster1_vpc.vpc_self_link
@@ -44,19 +46,21 @@ module "c1_control_plane"{
 }
 
 module "c1_worker_node1"{
-  vm_name = "c1_wn1"
+  source = "./modules/vm"
+  vm_name = "c1-wn1"
 	vm_zone = "asia_south2-a"
   vm_boot_disk_image = "debian-cloud/debian-12"
-  network = module.vpc.cluster1_vpc_self_link
+  network = module.cluster1_vpc.vpc_self_link
   vm_machine_type = "e2-medium"
   subnetwork   = module.cluster1_subnet.subnet_self_link
 }
 
 module "c1_worker_node2"{
-  vm_name = "c1_wn2"
+  source = "./modules/vm"
+  vm_name = "c1-wn2"
 	vm_zone = "asia_south2-a"
   vm_boot_disk_image = "debian-cloud/debian-12"
-  network = module.vpc.cluster1_vpc_self_link
+  network = module.cluster1_vpc.vpc_self_link
   vm_machine_type = "e2-medium"
   subnetwork   = module.cluster1_subnet.subnet_self_link
 }
@@ -64,7 +68,7 @@ module "c1_worker_node2"{
 # --- Web Firewall ---
 module "web_firewalls" {
   source        = "./modules/firewalls"
-  firewall_name = "website-fw"
+  firewall_name = "website-firewall"
   network       = module.vpc.vpc_self_link
   
   firewall_rules = {

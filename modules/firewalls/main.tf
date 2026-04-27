@@ -2,7 +2,7 @@ resource "google_compute_firewall" "dynamic_firewall" {
   # This creates one resource for every rule in the 'firewall_rules' map
   for_each = var.firewall_rules
 
-  name    = "${var.firewall_name}-${each.key}" # e.g., website-firewall-allow-ssh
+  name    = var.firewall_name
   network = var.network
 
   allow {

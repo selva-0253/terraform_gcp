@@ -12,3 +12,7 @@ variable "firewall_rules" {
     tags     = optional(list(string)) # This makes tags optional per rule
   }))
 }
+variable "firewall_name" {
+  description = "The prefix name for the firewall rules"
+  type        = string
+}
