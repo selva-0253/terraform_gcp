@@ -1,32 +1,106 @@
 module "vpc" {
  
 	source = "./modules/vpc"
-	vpc_name = var.vpc_name
+	vpc_name = "vpc_website"
 }
 
-module "vm" {
+module "cluster1_vpc"{
+
+  source = "./modules/vpc"
+  vpc_name = "cluster1_vpc"
+}
+
+module "subnet1"{
+  source = "./modules/subnets"
+  subnet_name = "public_subnet"
+  subnet_region = "asia-south1"
+  vpc_name = module.vpc.vpc_self_link
+}
+module "cluster1_subnet"{
+  source = "./modules/subnets"
+  subnet_name = "cluster1_subnet"
+  subnet_region = "asia-south2"
+  vpc_name = module.cluster1_vpc.vpc_self_link
+}
+module "website" {
 	source = "./modules/vm"
 	
-	vm1_name = var.vm1_name
-	vm1_zone = var.vm1_zone
-  vm1_boot_disk_image = var.vm1_boot_disk_image
+	vm_name = "website_vm"
+	vm_zone = "asia_south1"
+  vm_boot_disk_image = "debian-cloud/debian-12"
   network = module.vpc.vpc_self_link
-  vm1_machine_type = var.vm1_machine_type
-  subnetwork   = module.subnets.subnet_self_link
+  vm_machine_type = "e2-micro"
+  subnetwork   = module.subnet1.subnet_self_link
 }
 
-module "subnets" {
-	source = "./modules/subnets"
-	
-	subnet1_name = var.subnet1_name
-  vpc_name = module.vpc.vpc_self_link
-  region = var.region
+module "c1_control_plane"{
+  source = "./modules/vm"
+  vm_name = "c1_cp"
+	vm_zone = "asia_south2-a"
+  vm_boot_disk_image = "debian-cloud/debian-12"
+  network = module.cluster1_vpc.vpc_self_link
+  vm_machine_type = "e2-medium"
+  subnetwork   = module.cluster1_subnet.subnet_self_link
 }
 
-module "firewalls" {
-  source = "./modules/firewalls"
+module "c1_worker_node1"{
+  vm_name = "c1_wn1"
+	vm_zone = "asia_south2-a"
+  vm_boot_disk_image = "debian-cloud/debian-12"
+  network = module.vpc.cluster1_vpc_self_link
+  vm_machine_type = "e2-medium"
+  subnetwork   = module.cluster1_subnet.subnet_self_link
+}
+
+module "c1_worker_node2"{
+  vm_name = "c1_wn2"
+	vm_zone = "asia_south2-a"
+  vm_boot_disk_image = "debian-cloud/debian-12"
+  network = module.vpc.cluster1_vpc_self_link
+  vm_machine_type = "e2-medium"
+  subnetwork   = module.cluster1_subnet.subnet_self_link
+}
+
+# --- Web Firewall ---
+module "web_firewalls" {
+  source        = "./modules/firewalls"
+  firewall_name = "website-fw"
+  network       = module.vpc.vpc_self_link
   
-  firewall_name = var.firewall_name
-  network  = module.vpc.vpc_self_link
+  firewall_rules = {
+    "web-access" = {
+      protocol = "tcp"
+      ports    = ["80", "443", "22"]
+      ranges   = ["0.0.0.0/0"]
+      tags     = ["web"]
+    }
+  }
+}
+
+# --- Cluster Firewall ---
+module "cluster_firewalls" {
+  source        = "./modules/firewalls"
+  firewall_name = "cluster-fw"
+  network       = module.cluster1_vpc.vpc_self_link
+  
+  firewall_rules = {
+    "k8s-internal" = {
+      protocol = "tcp"
+      ports    = ["0-65535"]
+      ranges   = ["10.0.0.0/8"]
+    },
+    "k8s-nodeport" = {
+      protocol = "tcp"
+      ports    = ["30000-32767"]
+      ranges   = ["0.0.0.0/0"]
+    }
+    "ssh-access" = {
+      protocol = "tcp"
+      ports    = ["22"]
+      # SECURITY TIP: Replace 0.0.0.0/0 with your actual IP address/32
+      # Or your office/VPN CIDR range. Never expose SSH to the whole world.
+      ranges   = ["0.0.0.0/0"]
+    }
+  }
 }
 

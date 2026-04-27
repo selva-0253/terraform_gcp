@@ -1,4 +1,4 @@
-variable "subnet1_name"{
+variable "subnet_name"{
 
 	type = string
 }
@@ -8,7 +8,7 @@ variable "vpc_name"{
 	type = string
 }
 
-variable "region"{
+variable "subnet_region"{
   type = string
 }
 
