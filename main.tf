@@ -108,3 +108,17 @@ module "cluster_firewalls" {
   }
 }
 
+# --- Storage Bucket ---
+
+module "storage" {
+  source        = "./modules/storage"
+  bucket_name   = "my-unique-bucket-name-12345"
+  location      = "ASIA-SOUTH1"
+  storage_class = "STANDARD"
+  force_destroy = false
+  labels = {
+    env = "prod"
+    owner = "team"
+  }
+}
+

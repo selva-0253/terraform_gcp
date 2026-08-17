@@ -37,3 +37,4 @@ variable "vm1_region" {
 variable "vm1_zone" {
 	type = string
 }
+
